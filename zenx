@@ -1,5 +1,4 @@
-
--- [[ ZENX MONITOR - FINAL CHECKED VERSION ]] --
+-- [[ ZENX MONITOR - FIXED CLICK & SAVE - MADE BY.ZENX ]] --
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
@@ -11,8 +10,8 @@ local config = { webhook = "", discordId = "" }
 local isRunning = false
 local connections = {}
 
--- 📁 โหลดข้อมูลที่เซฟไว้
-local function loadLastConfig()
+-- 📁 ฟังก์ชันโหลดข้อมูล
+local function loadConfig()
     pcall(function()
         local files = listfiles("")
         for _, file in pairs(files) do
@@ -23,151 +22,135 @@ local function loadLastConfig()
         end
     end)
 end
-loadLastConfig()
+loadConfig()
 
 -- 🖥️ สร้าง UI
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "MonitorGui_z3xn"
-ScreenGui.IgnoreGuiInset = true
+ScreenGui.Name = "ZenX_Monitor"
+ScreenGui.ResetOnSpawn = false
 
--- 🖼️ ปุ่ม Toggle (ลากได้)
+-- 🖼️ ปุ่ม Toggle (รูปตัวละคร - ลากได้)
 local ToggleBtn = Instance.new("ImageButton", ScreenGui)
+ToggleBtn.Name = "Toggle"
 ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
 ToggleBtn.Position = UDim2.new(0, 15, 0.5, -30)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ToggleBtn.BorderSizePixel = 2
-ToggleBtn.BorderColor3 = Color3.fromRGB(0, 170, 255)
 ToggleBtn.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. Players.LocalPlayer.UserId .. "&width=420&height=420&format=png"
+ToggleBtn.ZIndex = 10
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1, 0)
 
--- [[ ระบบลากปุ่ม ]] --
+-- [[ ระบบลากปุ่ม ]]
 local dragging, dragInput, dragStart, startPos
-local function update(input)
-    local delta = input.Position - dragStart
-    ToggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = ToggleBtn.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
     end
 end)
-ToggleBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-end)
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then update(input) end
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        ToggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
 end)
 
--- 🖼️ หน้าต่าง Config
+-- 🖼️ หน้าต่างหลัก
 local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Name = "Main"
 MainFrame.Size = UDim2.new(0, 320, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -160, 0.5, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Draggable = true
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.Active = true
+MainFrame.Draggable = true -- ใช้ระบบลากพื้นฐานของ Roblox เพื่อความชัวร์
+MainFrame.Visible = true
 Instance.new("UICorner", MainFrame)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 45)
-Title.Text = "🛡️ MONITOR CONFIG"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "🛡️ ZENX MONITOR CONFIG"
 Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
 Instance.new("UICorner", Title)
 
 local WebhookInput = Instance.new("TextBox", MainFrame)
-WebhookInput.PlaceholderText = "Paste Discord Webhook URL..."
+WebhookInput.PlaceholderText = "Paste Webhook URL..."
 WebhookInput.Text = config.webhook
-WebhookInput.Size = UDim2.new(0.9, 0, 0, 45)
-WebhookInput.Position = UDim2.new(0.05, 0, 0.18, 0)
-WebhookInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+WebhookInput.Size = UDim2.new(0.9, 0, 0, 40)
+WebhookInput.Position = UDim2.new(0.05, 0, 0.2, 0)
+WebhookInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 WebhookInput.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", WebhookInput)
 
 local IDInput = Instance.new("TextBox", MainFrame)
-IDInput.PlaceholderText = "Enter Discord ID (To Tag)..."
+IDInput.PlaceholderText = "Discord ID (To Tag)..."
 IDInput.Text = config.discordId
-IDInput.Size = UDim2.new(0.9, 0, 0, 45)
-IDInput.Position = UDim2.new(0.05, 0, 0.36, 0)
-IDInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+IDInput.Size = UDim2.new(0.9, 0, 0, 40)
+IDInput.Position = UDim2.new(0.05, 0, 0.38, 0)
+IDInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 IDInput.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", IDInput)
 
 local StartBtn = Instance.new("TextButton", MainFrame)
-StartBtn.Text = "🚀 SAVE & START MONITOR"
-StartBtn.Size = UDim2.new(0.9, 0, 0, 50)
-StartBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
+StartBtn.Name = "Start"
+StartBtn.Text = "🚀 SAVE & START"
+StartBtn.Size = UDim2.new(0.9, 0, 0, 45)
+StartBtn.Position = UDim2.new(0.05, 0, 0.58, 0)
 StartBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
 StartBtn.TextColor3 = Color3.new(1, 1, 1)
 StartBtn.Font = Enum.Font.SourceSansBold
 Instance.new("UICorner", StartBtn)
 
 local StopBtn = Instance.new("TextButton", MainFrame)
-StopBtn.Text = "❌ STOP & CLOSE SCRIPT"
+StopBtn.Name = "Stop"
+StopBtn.Text = "❌ STOP & CLOSE"
 StopBtn.Size = UDim2.new(0.9, 0, 0, 40)
-StopBtn.Position = UDim2.new(0.05, 0, 0.74, 0)
+StopBtn.Position = UDim2.new(0.05, 0, 0.76, 0)
 StopBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 StopBtn.TextColor3 = Color3.new(1, 1, 1)
-StopBtn.Font = Enum.Font.SourceSansBold
 Instance.new("UICorner", StopBtn)
 
 local Credit = Instance.new("TextLabel", MainFrame)
-Credit.Size = UDim2.new(1, 0, 0, 30)
+Credit.Size = UDim2.new(1, 0, 0, 25)
 Credit.Position = UDim2.new(0, 0, 0.9, 0)
 Credit.Text = "Made by.zenx"
 Credit.TextColor3 = Color3.fromRGB(150, 150, 150)
 Credit.BackgroundTransparency = 1
-Credit.Font = Enum.Font.SourceSansItalic
 Credit.TextSize = 14
 
 -----------------------------------------------------------
--- ⚙️ ฟังก์ชันส่งข้อมูล (ตรวจสอบความครบถ้วน)
+-- ⚙️ ฟังก์ชันส่งแจ้งเตือน
 -----------------------------------------------------------
 local function sendNotify(player, statusType)
     if config.webhook == "" or not config.webhook:find("discord") then return end
     
-    local gameName = "Unknown Game"
+    local gameName = "Unknown"
     pcall(function() gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name end)
-    local playerCount = #Players:GetPlayers()
-    local maxPlayers = Players.MaxPlayers
     
-    -- เวลาไทย 24H (Fixed)
-    local ostime = os.time()
-    local thDateTable = os.date("!*t", ostime + (7 * 3600))
-    local currentTime = string.format("%02d:%02d:%02d", thDateTable.hour, thDateTable.min, thDateTable.sec)
-    local currentDate = string.format("%02d/%02d/%d", thDateTable.day, thDateTable.month, thDateTable.year)
-    
-    local title = statusType == "Join" and "📥 ผู้เล่นเข้าเกม" or "📤 ผู้เล่นออกจากเกม"
-    local color = statusType == "Join" and 65280 or 16776960
-    local description = statusType == "Join" and "พบผู้เล่นใหม่เข้ามาในเซิร์ฟเวอร์" or "ผู้เล่น: **" .. player.Name .. "** หลุดหรือออกจากเกมไปแล้ว"
-
-    if statusType == "Test" then
-        title = "✅ ระบบเริ่มทำงานแล้ว (Test)"
-        color = 3447003
-        description = "สคริปต์เชื่อมต่อสำเร็จ (Made by.zenx)"
-    elseif statusType == "Stop" then
-        title = "🛑 ปิดการใช้งานสคริปต์"
-        color = 10038562
-        description = "สคริปต์ถูกสั่งปิดการทำงานเรียบร้อยแล้ว"
-    end
+    -- เวลาไทย (Fixed 24H)
+    local t = os.time() + (7 * 3600)
+    local d = os.date("!*t", t)
+    local currentTime = string.format("%02d:%02d:%02d", d.hour, d.min, d.sec)
+    local currentDate = string.format("%02d/%02d/%d", d.day, d.month, d.year)
 
     local payload = {
         ["content"] = (config.discordId ~= "" and "<@" .. config.discordId .. ">" or ""),
         ["embeds"] = {{
-            ["title"] = title,
-            ["description"] = description,
-            ["color"] = color,
+            ["title"] = (statusType == "Join" and "📥 ผู้เล่นเข้าเกม" or statusType == "Leave" and "📤 ผู้เล่นออกจากเกม" or statusType == "Test" and "✅ ระบบทำงานแล้ว" or "🛑 ปิดระบบ"),
+            ["description"] = (statusType == "Leave" and "ผู้เล่น: **"..player.Name.."** หลุดหรือออกจากเกมไปแล้ว" or "สถานะปัจจุบันของสคริปต์ (Made by.zenx)"),
+            ["color"] = (statusType == "Join" and 65280 or statusType == "Leave" and 16776960 or 3447003),
             ["fields"] = {
-                {["name"] = "👤 ชื่อผู้เล่น", ["value"] = player.Name, ["inline"] = true},
+                {["name"] = "👤 ผู้เล่น", ["value"] = player.Name, ["inline"] = true},
                 {["name"] = "🎮 แมพ", ["value"] = gameName, ["inline"] = false},
-                {["name"] = "👥 คนในเซิร์ฟ", ["value"] = playerCount .. " / " .. maxPlayers, ["inline"] = true},
-                {["name"] = "🕒 เวลา (ไทย)", ["value"] = currentTime .. " (" .. currentDate .. ")", ["inline"] = true}
+                {["name"] = "👥 เซิร์ฟเวอร์", ["value"] = #Players:GetPlayers() .. " / " .. Players.MaxPlayers, ["inline"] = true},
+                {["name"] = "🕒 เวลาไทย", ["value"] = currentTime .. " (" .. currentDate .. ")", ["inline"] = true}
             },
             ["footer"] = { ["text"] = "Made by.zenx" }
         }}
@@ -183,36 +166,34 @@ local function sendNotify(player, statusType)
     end)
 end
 
--- [[ ระบบปุ่มทำงานทั้งหมด ]] --
+-- [[ การทำงานของปุ่ม ]] --
 
--- 1. ปุ่ม Save & Start
-StartBtn.MouseButton1Click:Connect(function()
+-- ปุ่ม Save & Start
+StartBtn.Activated:Connect(function()
     config.webhook = WebhookInput.Text
     config.discordId = IDInput.Text
     
-    local saveName = config.discordId ~= "" and "MonitorConfig_"..config.discordId..".json" or "MonitorConfig_Guest.json"
-    pcall(function() writefile(saveName, HttpService:JSONEncode(config)) end)
+    local name = config.discordId ~= "" and "MonitorConfig_"..config.discordId..".json" or "MonitorConfig_Guest.json"
+    pcall(function() writefile(name, HttpService:JSONEncode(config)) end)
     
     sendNotify(Players.LocalPlayer, "Test")
     
     if not isRunning then
         isRunning = true
-        connections.PlayerAdded = Players.PlayerAdded:Connect(function(p) sendNotify(p, "Join") end)
-        connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(p) sendNotify(p, "Leave") end)
+        table.insert(connections, Players.PlayerAdded:Connect(function(p) sendNotify(p, "Join") end))
+        table.insert(connections, Players.PlayerRemoving:Connect(function(p) sendNotify(p, "Leave") end))
     end
-    
     MainFrame.Visible = false
 end)
 
--- 2. ปุ่มเปิด/ปิด UI (Toggle)
-ToggleBtn.MouseButton1Click:Connect(function()
-    if not dragging then MainFrame.Visible = not MainFrame.Visible end
+-- ปุ่ม Stop
+StopBtn.Activated:Connect(function()
+    sendNotify(Players.LocalPlayer, "Stop")
+    for _, v in pairs(connections) do v:Disconnect() end
+    ScreenGui:Destroy()
 end)
 
--- 3. ปุ่ม Stop Script
-StopBtn.MouseButton1Click:Connect(function()
-    sendNotify(Players.LocalPlayer, "Stop")
-    for _, v in pairs(connections) do if v then v:Disconnect() end end
-    ScreenGui:Destroy()
-    isRunning = false
+-- ปุ่ม Toggle
+ToggleBtn.Activated:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
 end)
