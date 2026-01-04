@@ -1,4 +1,5 @@
--- [[ MONITOR UI - MADE BY.ZENX - FIXED THAI TIME (24H) ]] --
+
+-- [[ ZENX MONITOR - FINAL CHECKED VERSION ]] --
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
@@ -10,17 +11,17 @@ local config = { webhook = "", discordId = "" }
 local isRunning = false
 local connections = {}
 
--- 📁 ระบบบันทึกและโหลดข้อมูล
+-- 📁 โหลดข้อมูลที่เซฟไว้
 local function loadLastConfig()
-    local files = listfiles and listfiles("") or {}
-    for _, file in pairs(files) do
-        if file:find("MonitorConfig_") and file:find(".json") then
-            pcall(function()
+    pcall(function()
+        local files = listfiles("")
+        for _, file in pairs(files) do
+            if file:find("MonitorConfig_") and file:find(".json") then
                 config = HttpService:JSONDecode(readfile(file))
-            end)
-            break
+                break
+            end
         end
-    end
+    end)
 end
 loadLastConfig()
 
@@ -29,7 +30,7 @@ local ScreenGui = Instance.new("ScreenGui", CoreGui)
 ScreenGui.Name = "MonitorGui_z3xn"
 ScreenGui.IgnoreGuiInset = true
 
--- 🖼️ ปุ่มเปิด/ปิด แบบลากวางได้
+-- 🖼️ ปุ่ม Toggle (ลากได้)
 local ToggleBtn = Instance.new("ImageButton", ScreenGui)
 ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
 ToggleBtn.Position = UDim2.new(0, 15, 0.5, -30)
@@ -37,49 +38,38 @@ ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 ToggleBtn.BorderSizePixel = 2
 ToggleBtn.BorderColor3 = Color3.fromRGB(0, 170, 255)
 ToggleBtn.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. Players.LocalPlayer.UserId .. "&width=420&height=420&format=png"
-local cornerBtn = Instance.new("UICorner", ToggleBtn)
-cornerBtn.CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1, 0)
 
--- ระบบลากปุ่ม
+-- [[ ระบบลากปุ่ม ]] --
 local dragging, dragInput, dragStart, startPos
 local function update(input)
     local delta = input.Position - dragStart
     ToggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
-
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = ToggleBtn.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
-
 ToggleBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
+    if input == dragInput and dragging then update(input) end
 end)
 
--- 🖼️ หน้าต่างหลัก
+-- 🖼️ หน้าต่าง Config
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 320, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -160, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Draggable = true
 MainFrame.Active = true
-MainFrame.Visible = true
 Instance.new("UICorner", MainFrame)
 
 local Title = Instance.new("TextLabel", MainFrame)
@@ -137,7 +127,7 @@ Credit.Font = Enum.Font.SourceSansItalic
 Credit.TextSize = 14
 
 -----------------------------------------------------------
--- ⚙️ ฟังก์ชันส่งข้อมูล (แก้ไขเวลาไทย 24H)
+-- ⚙️ ฟังก์ชันส่งข้อมูล (ตรวจสอบความครบถ้วน)
 -----------------------------------------------------------
 local function sendNotify(player, statusType)
     if config.webhook == "" or not config.webhook:find("discord") then return end
@@ -147,11 +137,9 @@ local function sendNotify(player, statusType)
     local playerCount = #Players:GetPlayers()
     local maxPlayers = Players.MaxPlayers
     
-    -- แก้ไขการดึงเวลาไทยให้ตรง (GMT+7)
+    -- เวลาไทย 24H (Fixed)
     local ostime = os.time()
-    local timezoneOffset = 7 * 3600
-    local thDateTable = os.date("!*t", ostime + timezoneOffset)
-    
+    local thDateTable = os.date("!*t", ostime + (7 * 3600))
     local currentTime = string.format("%02d:%02d:%02d", thDateTable.hour, thDateTable.min, thDateTable.sec)
     local currentDate = string.format("%02d/%02d/%d", thDateTable.day, thDateTable.month, thDateTable.year)
     
@@ -195,28 +183,36 @@ local function sendNotify(player, statusType)
     end)
 end
 
--- ระบบปุ่ม
-ToggleBtn.MouseButton1Click:Connect(function() 
-    if not dragging then MainFrame.Visible = not MainFrame.Visible end
-end)
+-- [[ ระบบปุ่มทำงานทั้งหมด ]] --
 
-StartBtn.MouseButton1Connect(function()
+-- 1. ปุ่ม Save & Start
+StartBtn.MouseButton1Click:Connect(function()
     config.webhook = WebhookInput.Text
     config.discordId = IDInput.Text
+    
     local saveName = config.discordId ~= "" and "MonitorConfig_"..config.discordId..".json" or "MonitorConfig_Guest.json"
-    writefile(saveName, HttpService:JSONEncode(config))
+    pcall(function() writefile(saveName, HttpService:JSONEncode(config)) end)
+    
     sendNotify(Players.LocalPlayer, "Test")
+    
     if not isRunning then
         isRunning = true
         connections.PlayerAdded = Players.PlayerAdded:Connect(function(p) sendNotify(p, "Join") end)
         connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(p) sendNotify(p, "Leave") end)
     end
+    
     MainFrame.Visible = false
 end)
 
+-- 2. ปุ่มเปิด/ปิด UI (Toggle)
+ToggleBtn.MouseButton1Click:Connect(function()
+    if not dragging then MainFrame.Visible = not MainFrame.Visible end
+end)
+
+-- 3. ปุ่ม Stop Script
 StopBtn.MouseButton1Click:Connect(function()
     sendNotify(Players.LocalPlayer, "Stop")
-    for i, v in pairs(connections) do if v then v:Disconnect() end end
+    for _, v in pairs(connections) do if v then v:Disconnect() end end
     ScreenGui:Destroy()
     isRunning = false
 end)
