@@ -1,5 +1,4 @@
-
--- [[ MONITOR UI - MADE BY.ZENX - WITH DRAGGABLE TOGGLE BUTTON ]] --
+-- [[ MONITOR UI - MADE BY.ZENX - FIXED THAI TIME (24H) ]] --
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
@@ -28,9 +27,9 @@ loadLastConfig()
 -- 🖥️ สร้าง UI
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
 ScreenGui.Name = "MonitorGui_z3xn"
-ScreenGui.IgnoreGuiInset = true -- เพื่อให้ลากได้อิสระขึ้น
+ScreenGui.IgnoreGuiInset = true
 
--- 🖼️ ปุ่มเปิด/ปิด แบบลากวางได้ (Draggable Toggle Button)
+-- 🖼️ ปุ่มเปิด/ปิด แบบลากวางได้
 local ToggleBtn = Instance.new("ImageButton", ScreenGui)
 ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
 ToggleBtn.Position = UDim2.new(0, 15, 0.5, -30)
@@ -41,7 +40,7 @@ ToggleBtn.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. P
 local cornerBtn = Instance.new("UICorner", ToggleBtn)
 cornerBtn.CornerRadius = UDim.new(1, 0)
 
--- [[ ระบบลากปุ่มสำหรับมือถือและคอม ]] --
+-- ระบบลากปุ่ม
 local dragging, dragInput, dragStart, startPos
 local function update(input)
     local delta = input.Position - dragStart
@@ -73,7 +72,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- 🖼️ หน้าต่างหลัก (Main Frame)
+-- 🖼️ หน้าต่างหลัก
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 320, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -160, 0.5, -160)
@@ -138,7 +137,7 @@ Credit.Font = Enum.Font.SourceSansItalic
 Credit.TextSize = 14
 
 -----------------------------------------------------------
--- ⚙️ ฟังก์ชันส่งข้อมูล
+-- ⚙️ ฟังก์ชันส่งข้อมูล (แก้ไขเวลาไทย 24H)
 -----------------------------------------------------------
 local function sendNotify(player, statusType)
     if config.webhook == "" or not config.webhook:find("discord") then return end
@@ -148,10 +147,13 @@ local function sendNotify(player, statusType)
     local playerCount = #Players:GetPlayers()
     local maxPlayers = Players.MaxPlayers
     
-    local utc = os.time()
-    local thTime = utc + (7 * 3600)
-    local currentTime = os.date("%H:%M:%S", thTime)
-    local currentDate = os.date("%d/%m/%Y", thTime)
+    -- แก้ไขการดึงเวลาไทยให้ตรง (GMT+7)
+    local ostime = os.time()
+    local timezoneOffset = 7 * 3600
+    local thDateTable = os.date("!*t", ostime + timezoneOffset)
+    
+    local currentTime = string.format("%02d:%02d:%02d", thDateTable.hour, thDateTable.min, thDateTable.sec)
+    local currentDate = string.format("%02d/%02d/%d", thDateTable.day, thDateTable.month, thDateTable.year)
     
     local title = statusType == "Join" and "📥 ผู้เล่นเข้าเกม" or "📤 ผู้เล่นออกจากเกม"
     local color = statusType == "Join" and 65280 or 16776960
@@ -195,12 +197,10 @@ end
 
 -- ระบบปุ่ม
 ToggleBtn.MouseButton1Click:Connect(function() 
-    if not dragging then -- ป้องกันการเปิด/ปิดหน้าต่างขณะกำลังลาก
-        MainFrame.Visible = not MainFrame.Visible 
-    end
+    if not dragging then MainFrame.Visible = not MainFrame.Visible end
 end)
 
-StartBtn.MouseButton1Click:Connect(function()
+StartBtn.MouseButton1Connect(function()
     config.webhook = WebhookInput.Text
     config.discordId = IDInput.Text
     local saveName = config.discordId ~= "" and "MonitorConfig_"..config.discordId..".json" or "MonitorConfig_Guest.json"
