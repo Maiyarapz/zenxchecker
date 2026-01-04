@@ -1,42 +1,43 @@
--- [[ MONITOR UI WITH PROFILE IMAGE & HIDE SYSTEM ]] --
--- สำหรับคุณ z3xn_
+-- [[ MONITOR UI WITH DYNAMIC SAVE SYSTEM ]] --
+-- พัฒนาสำหรับคุณ z3xn_
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 
--- 📁 ระบบบันทึกข้อมูล
-local fileName = "z3xn_Monitor_Config.json"
+-- 📁 ระบบบันทึกข้อมูลแบบ Dynamic (อิงตาม Discord ID)
 local config = { webhook = "", discordId = "" }
 
-local function saveConfig()
-    writefile(fileName, HttpService:JSONEncode(config))
-end
-
-local function loadConfig()
-    if isfile(fileName) then
-        pcall(function() config = HttpService:JSONDecode(readfile(fileName)) end)
+-- ฟังก์ชันสำหรับโหลดข้อมูลล่าสุดที่เคยกรอก (ถ้ามี)
+local function loadLastConfig()
+    -- ดึงไฟล์ล่าสุดที่เคยบันทึกไว้ (ถ้ามี) เพื่อให้ UI ไม่ว่างเปล่าตอนเปิดครั้งแรก
+    local files = listfiles and listfiles("") or {}
+    for _, file in pairs(files) do
+        if file:find("MonitorConfig_") and file:find(".json") then
+            pcall(function()
+                config = HttpService:JSONDecode(readfile(file))
+            end)
+            break
+        end
     end
 end
-loadConfig()
+loadLastConfig()
 
 -- 🖥️ สร้าง ScreenGui
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
 ScreenGui.Name = "MonitorGui_z3xn"
 
--- 🖼️ ปุ่มเปิด/ปิด แบบมีรูปโปรไฟล์ (Toggle Button)
+-- 🖼️ ปุ่มเปิด/ปิด แบบมีรูปโปรไฟล์
 local ToggleBtn = Instance.new("ImageButton", ScreenGui)
 ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
 ToggleBtn.Position = UDim2.new(0, 15, 0.5, -30)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 ToggleBtn.BorderSizePixel = 2
 ToggleBtn.BorderColor3 = Color3.fromRGB(0, 170, 255)
--- ดึงรูปหน้าตัวละครของคุณมาเป็นปุ่ม
 ToggleBtn.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. Players.LocalPlayer.UserId .. "&width=420&height=420&format=png"
-
 local cornerBtn = Instance.new("UICorner", ToggleBtn)
-cornerBtn.CornerRadius = UDim.new(1, 0) -- ทำให้ปุ่มกลม
+cornerBtn.CornerRadius = UDim.new(1, 0)
 
 -- 🖼️ หน้าต่างหลัก (Main Frame)
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -54,7 +55,7 @@ Title.Text = "🛡️ MONITOR CONFIG"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 20
+Title.TextSize = 18
 Instance.new("UICorner", Title)
 
 -- ช่องใส่ Webhook
@@ -69,7 +70,7 @@ Instance.new("UICorner", WebhookInput)
 
 -- ช่องใส่ Discord ID
 local IDInput = Instance.new("TextBox", MainFrame)
-IDInput.PlaceholderText = "Enter Discord ID (e.g. 45863...)"
+IDInput.PlaceholderText = "Enter Discord ID (To Tag)..."
 IDInput.Text = config.discordId
 IDInput.Size = UDim2.new(0.9, 0, 0, 45)
 IDInput.Position = UDim2.new(0.05, 0, 0.5, 0)
@@ -79,7 +80,7 @@ Instance.new("UICorner", IDInput)
 
 -- ปุ่ม Save & Start
 local StartBtn = Instance.new("TextButton", MainFrame)
-StartBtn.Text = "🚀 START MONITORING"
+StartBtn.Text = "🚀 SAVE & START MONITOR"
 StartBtn.Size = UDim2.new(0.9, 0, 0, 55)
 StartBtn.Position = UDim2.new(0.05, 0, 0.75, 0)
 StartBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
@@ -103,7 +104,7 @@ local function sendNotify(player, statusType)
     end
 
     local payload = {
-        ["content"] = "<@" .. config.discordId .. ">",
+        ["content"] = (config.discordId ~= "" and "<@" .. config.discordId .. ">" or ""),
         ["embeds"] = {{
             ["title"] = title,
             ["color"] = color,
@@ -136,13 +137,20 @@ local isRunning = false
 StartBtn.MouseButton1Click:Connect(function()
     config.webhook = WebhookInput.Text
     config.discordId = IDInput.Text
-    saveConfig()
+    
+    -- บันทึกข้อมูลโดยใช้ Discord ID เป็นชื่อไฟล์
+    if config.discordId ~= "" then
+        local customFileName = "MonitorConfig_" .. config.discordId .. ".json"
+        writefile(customFileName, HttpService:JSONEncode(config))
+    else
+        writefile("MonitorConfig_Guest.json", HttpService:JSONEncode(config))
+    end
     
     if not isRunning then
         isRunning = true
         Players.PlayerAdded:Connect(function(p) sendNotify(p, "Join") end)
         Players.PlayerRemoving:Connect(function(p) sendNotify(p, "Leave") end)
-        StartBtn.Text = "🟢 MONITORING..."
+        StartBtn.Text = "🟢 RUNNING..."
         StartBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end
     MainFrame.Visible = false
